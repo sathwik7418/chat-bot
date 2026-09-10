@@ -54,8 +54,9 @@ export function AIBot({
   setDraft("");
   setIsTyping(true);
 
+  const API_URL = import.meta.env.VITE_API_URL;
   try {
-    const response = await fetch("http://localhost:5000/api/chat", {
+    const response = await fetch(`${API_URL}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
