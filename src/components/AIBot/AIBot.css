@@ -996,3 +996,176 @@ animation: none;
 transition: none;
 }
 }
+
+/* =========================================================
+   MILO MARKDOWN CONTENT
+   ========================================================= */
+
+.ai-bot-message-bubble p {
+  margin: 0 0 10px;
+}
+
+.ai-bot-message-bubble p:last-child {
+  margin-bottom: 0;
+}
+
+/* Headings */
+
+.ai-bot-message-bubble h1,
+.ai-bot-message-bubble h2,
+.ai-bot-message-bubble h3 {
+  margin: 16px 0 8px;
+
+  color: var(--ai-ink);
+
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.ai-bot-message-bubble h1 {
+  font-size: 18px;
+}
+
+.ai-bot-message-bubble h2 {
+  font-size: 16px;
+}
+
+.ai-bot-message-bubble h3 {
+  font-size: 14px;
+}
+
+.ai-bot-message-bubble h1:first-child,
+.ai-bot-message-bubble h2:first-child,
+.ai-bot-message-bubble h3:first-child {
+  margin-top: 0;
+}
+
+/* Bold */
+
+.ai-bot-message-bubble strong {
+  color: var(--ai-ink);
+  font-weight: 700;
+}
+
+/* Lists */
+
+.ai-bot-message-bubble ul,
+.ai-bot-message-bubble ol {
+  margin: 7px 0 12px;
+  padding-left: 21px;
+}
+
+.ai-bot-message-bubble li {
+  margin: 5px 0;
+  padding-left: 2px;
+}
+
+.ai-bot-message-bubble li::marker {
+  color: var(--ai-accent);
+}
+
+/* Links */
+
+.ai-bot-message-bubble a {
+  color: var(--ai-accent-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ai-bot-message-bubble a:hover {
+  text-decoration: underline;
+}
+
+/* Inline code */
+
+.ai-bot-message-bubble code {
+  padding: 2px 5px;
+
+  border-radius: 5px;
+
+  color: var(--ai-accent-dark);
+  background: var(--ai-accent-soft);
+
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  font-size: 0.9em;
+}
+
+/* Tables */
+
+.ai-bot-message-bubble table {
+  width: 100%;
+
+  margin: 12px 0;
+
+  border-collapse: separate;
+  border-spacing: 0;
+
+  overflow: hidden;
+
+  border: 1px solid var(--ai-line);
+
+  border-radius: 10px;
+
+  font-size: 11px;
+}
+
+.ai-bot-message-bubble th,
+.ai-bot-message-bubble td {
+  padding: 8px 7px;
+
+  border-right: 1px solid var(--ai-line);
+  border-bottom: 1px solid var(--ai-line);
+
+  text-align: left;
+  vertical-align: top;
+}
+
+.ai-bot-message-bubble th {
+  color: var(--ai-ink);
+  background: var(--ai-wash);
+  font-weight: 700;
+}
+
+.ai-bot-message-bubble td {
+  background: #ffffff;
+}
+
+.ai-bot-message-bubble th:last-child,
+.ai-bot-message-bubble td:last-child {
+  border-right: 0;
+}
+
+.ai-bot-message-bubble tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Horizontal rule */
+
+.ai-bot-message-bubble hr {
+  margin: 14px 0;
+
+  border: 0;
+  border-top: 1px solid var(--ai-line);
+}
+
+/* Blockquotes */
+
+.ai-bot-message-bubble blockquote {
+  margin: 10px 0;
+
+  padding: 8px 12px;
+
+  border-left: 3px solid var(--ai-accent);
+
+  color: var(--ai-muted);
+
+  background: var(--ai-accent-soft);
+
+  border-radius: 0 8px 8px 0;
+}
