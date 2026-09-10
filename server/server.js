@@ -106,7 +106,7 @@ Date: ${mandiQuery.date || "Latest available"}`
         district: mandiQuery.district || "",
         commodity: mandiQuery.commodity,
         date: mandiQuery.date || "",
-        limit: 100,
+        limit: 10000,
       });
 
       /* ------------------------------------------------
