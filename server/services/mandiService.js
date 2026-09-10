@@ -141,6 +141,8 @@ function fetchFromDataGov(limit = 100, offset = 0) {
           try {
             const result = JSON.parse(data);
 
+            console.log("Data.gov response:", result);
+
             if (response.statusCode !== 200) {
               return reject(
                 new Error(
@@ -804,7 +806,7 @@ async function getMandiSummary({
  * ================================================================
  */
 
-async function collectDailyMandiSnapshot(limit = 100) {
+async function collectDailyMandiSnapshot(limit = 10000) {
   const result = await fetchFromDataGov(limit);
 
   const records = Array.isArray(result.records)

@@ -95,11 +95,14 @@ export default function BotWindow({
               />
             ))}
             {isTyping && (
-              <div className="ai-bot-message-row assistant" data-testid="status-typing">
-                <Avatar avatar={avatar} botName={botName} className="ai-bot-avatar-message" />
-                <div className="ai-bot-message-bubble ai-bot-typing"><i /><i /><i /></div>
-              </div>
-            )}
+  <div className="ai-bot-message-row assistant" data-testid="status-typing">
+    <div className="ai-bot-message-bubble ai-bot-typing">
+      <i />
+      <i />
+      <i />
+    </div>
+  </div>
+)}
             <div ref={messagesEndRef} />
           </div>
         )}

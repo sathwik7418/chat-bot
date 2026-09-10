@@ -653,35 +653,22 @@ function detectDate(message) {
  */
 
 function detectCommodity(message) {
-  const text =
-    normalizeText(message);
+  const text = normalizeText(message);
 
-  const allAliases =
-    Object.entries(
-      commodityAliases
-    ).flatMap(
-      ([commodity, aliases]) =>
-        aliases.map(
-          (alias) => ({
-            commodity,
-            alias,
-          })
-        )
-    );
+  const entries = Object.entries(commodityAliases)
+    .flatMap(([canonical, aliases]) =>
+      aliases.map(alias => ({
+        canonical,
+        alias: normalizeText(alias),
+      }))
+    )
+    .sort((a, b) => b.alias.length - a.alias.length);
 
-  allAliases.sort(
-    (a, b) =>
-      b.alias.length -
-      a.alias.length
-  );
+  for (const entry of entries) {
+    const pattern = new RegExp(`\\b${entry.alias}\\b`, "i");
 
-  for (const item of allAliases) {
-    if (
-      text.includes(
-        item.alias
-      )
-    ) {
-      return item.commodity;
+    if (pattern.test(text)) {
+      return entry.canonical;
     }
   }
 
@@ -696,35 +683,22 @@ function detectCommodity(message) {
  */
 
 function detectDistrict(message) {
-  const text =
-    normalizeText(message);
+  const text = normalizeText(message);
 
-  const allAliases =
-    Object.entries(
-      districtAliases
-    ).flatMap(
-      ([district, aliases]) =>
-        aliases.map(
-          (alias) => ({
-            district,
-            alias,
-          })
-        )
-    );
+  const entries = Object.entries(districtAliases)
+    .flatMap(([canonical, aliases]) =>
+      aliases.map(alias => ({
+        canonical,
+        alias: normalizeText(alias),
+      }))
+    )
+    .sort((a, b) => b.alias.length - a.alias.length);
 
-  allAliases.sort(
-    (a, b) =>
-      b.alias.length -
-      a.alias.length
-  );
+  for (const entry of entries) {
+    const pattern = new RegExp(`\\b${entry.alias}\\b`, "i");
 
-  for (const item of allAliases) {
-    if (
-      text.includes(
-        item.alias
-      )
-    ) {
-      return item.district;
+    if (pattern.test(text)) {
+      return entry.canonical;
     }
   }
 
@@ -844,4 +818,11 @@ function analyzeMandiQuestion(
 
 module.exports = {
   analyzeMandiQuestion,
+  detectCommodity,
+  detectDistrict,
+  detectDate,
+  detectIntent,
+  normalizeText,
+  commodityAliases,
+  districtAliases,
 };

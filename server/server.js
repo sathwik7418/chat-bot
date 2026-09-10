@@ -1,9 +1,19 @@
+
 require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const Groq = require("groq-sdk");
+
 const farmerKnowledge = require("./knowledge/farmers");
+
+const {
+  understandMessage,
+} = require("./intelligence/understandMessage");
+
+const {
+  routeTool,
+} = require("./intelligence/toolRouter");
 
 const {
   getMandiPrices,
@@ -11,8 +21,8 @@ const {
 } = require("./services/mandiService");
 
 const {
-  analyzeMandiQuestion,
-} = require("./utils/mandiQueryAnalyzer");
+  resolveContext,
+} = require("./intelligence/contextResolver");
 
 const app = express();
 
@@ -22,13 +32,13 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
   "https://farmer-chatbot-api.netlify.app",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without an Origin header
       if (!origin) {
         return callback(null, true);
       }
@@ -39,8 +49,13 @@ app.use(
 
       return callback(new Error("Not allowed by CORS"));
     },
+
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
 
@@ -68,7 +83,10 @@ app.get("/", (req, res) => {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const {
+      message,
+      history = [],
+    } = req.body;
 
     if (!message || !message.trim()) {
       return res.status(400).json({
@@ -77,40 +95,80 @@ app.post("/api/chat", async (req, res) => {
     }
 
     /* ------------------------------------------------
-     * 1. Analyze user's question
+     * 1. UNDERSTAND USER MESSAGE
      * ------------------------------------------------ */
 
-    const mandiQuery = analyzeMandiQuestion(message);
+const understanding =
+  resolveContext(
+    understandMessage(message.trim()),
+    history
+  );
+  console.log(
+  "Context resolved:",
+  understanding
+);
 
-    console.log("Mandi query analysis:", mandiQuery);
+    /* ------------------------------------------------
+     * 2. SELECT TOOL
+     * ------------------------------------------------ */
+
+    const selectedTool = routeTool(
+  understanding
+);
+
+    console.log(
+      "Milo understanding:",
+      understanding
+    );
+
+    console.log(
+      "Selected tool:",
+      selectedTool
+    );
+
+    /* ------------------------------------------------
+     * 3. MANDI TOOL
+     * ------------------------------------------------ */
 
     let mandiContext = "";
 
-    /* ------------------------------------------------
-     * 2. Get mandi data when required
-     * ------------------------------------------------ */
+    const isMandiQuery =
+      selectedTool === "MANDI";
 
-    const isMandiQuery = mandiQuery.intent !== "GENERAL";
-
-    if (isMandiQuery && mandiQuery.commodity) {
+    if (
+      isMandiQuery &&
+      understanding.commodity
+    ) {
       console.log(
-        `Mandi request detected:
-Intent: ${mandiQuery.intent}
-Commodity: ${mandiQuery.commodity}
-District: ${mandiQuery.district || "All Telangana"}
-Date: ${mandiQuery.date || "Latest available"}`
-      );
+  "Mandi request detected:",
+  {
+    intent: understanding.intent,
+    commodity: understanding.commodity,
+    district:
+      understanding.district || "All Telangana",
+    date:
+      understanding.date || "Latest available",
+  }
+);
 
-      const summary = await getMandiSummary({
-        state: "Telangana",
-        district: mandiQuery.district || "",
-        commodity: mandiQuery.commodity,
-        date: mandiQuery.date || "",
-        limit: 10000,
-      });
+      const summary =
+        await getMandiSummary({
+          state: "Telangana",
+
+          district:
+            understanding.district || "",
+
+          commodity:
+            understanding.commodity,
+
+          date:
+            understanding.date || "",
+
+          limit: 10000,
+        });
 
       /* ------------------------------------------------
-       * 3. Determine data provenance
+       * 4. DETERMINE DATA PROVENANCE
        * ------------------------------------------------ */
 
       let sourceDescription = "";
@@ -118,10 +176,15 @@ Date: ${mandiQuery.date || "Latest available"}`
       if (summary.source === "live") {
         sourceDescription =
           "This data came directly from the live data.gov.in API.";
-      } else if (summary.source === "cache") {
+      } else if (
+        summary.source === "cache"
+      ) {
         sourceDescription =
           "This data came from a previously collected mandi-data cache. It is historical data, not necessarily today's data.";
-      } else if (summary.source === "historical_test_fixture") {
+      } else if (
+        summary.source ===
+        "historical_test_fixture"
+      ) {
         sourceDescription =
           "THIS IS DEVELOPMENT TEST DATA. It is not real historical government data and must not be presented as real government data or today's price.";
       } else {
@@ -130,7 +193,7 @@ Date: ${mandiQuery.date || "Latest available"}`
       }
 
       /* ------------------------------------------------
-       * 4. Build mandi context
+       * 5. BUILD MANDI CONTEXT
        * ------------------------------------------------ */
 
       mandiContext = `
@@ -221,23 +284,29 @@ ${JSON.stringify(
       )}
 
 --------------------------------
-MANDI QUERY ANALYSIS
+MANDI QUERY UNDERSTANDING
 --------------------------------
 
 Intent:
-${mandiQuery.intent}
+${understanding.intent}
 
 Commodity:
-${mandiQuery.commodity}
+${understanding.commodity}
 
 District:
-${mandiQuery.district || "All Telangana"}
+${understanding.district || "All Telangana"}
 
 Requested date:
-${mandiQuery.date || "Latest available mandi data"}
+${
+        understanding.date ||
+        "Latest available mandi data"
+      }
 
 Date type:
-${mandiQuery.dateType || "Not specified"}
+${
+        understanding.dateType ||
+        "Not specified"
+      }
 
 --------------------------------
 MANDI DATA RULES
@@ -284,38 +353,49 @@ requested mandi data is currently unavailable.
     }
 
     /* ------------------------------------------------
-     * 5. Prepare safe conversation history
+     * 6. SAFE CONVERSATION HISTORY
      * ------------------------------------------------ */
 
-    const safeHistory = Array.isArray(history)
-      ? history
-          .filter(
-            (item) =>
-              item &&
-              (item.role === "user" || item.role === "assistant") &&
-              typeof item.content === "string"
-          )
-          .slice(-12)
-          .map((item) => ({
-            role: item.role,
-            content: item.content,
-          }))
-      : [];
+    const safeHistory =
+      Array.isArray(history)
+        ? history
+            .filter(
+              (item) =>
+                item &&
+                (
+                  item.role === "user" ||
+                  item.role === "assistant"
+                ) &&
+                typeof item.content ===
+                  "string"
+            )
+            .slice(-12)
+            .map((item) => ({
+              role: item.role,
+              content: item.content,
+            }))
+        : [];
+
+        console.log(
+  "Conversation history:",
+  safeHistory
+);
 
     /* ------------------------------------------------
-     * 6. Send knowledge + mandi context to Groq
+     * 7. SEND KNOWLEDGE + TOOL DATA TO GROQ
      * ------------------------------------------------ */
 
-    const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-120b",
+    const completion =
+      await groq.chat.completions.create({
+        model: "openai/gpt-oss-120b",
 
-      temperature: 0.4,
+        temperature: 0.4,
 
-      messages: [
-        {
-          role: "system",
+        messages: [
+          {
+            role: "system",
 
-          content: `
+            content: `
 You are Milo, a smart and practical AI assistant for farmers and sellers.
 
 Your job is to understand what the user actually needs and give the most useful answer with the least unnecessary text.
@@ -330,7 +410,10 @@ ${farmerKnowledge}
 MANDI DATA
 ================================================
 
-${mandiContext || "No mandi data was requested for this message."}
+${
+              mandiContext ||
+              "No mandi data was requested for this message."
+            }
 
 ================================================
 IMPORTANT AI RULES
@@ -339,17 +422,17 @@ IMPORTANT AI RULES
 1. Never invent factual information.
 
 2. Never invent farmer names, seller names, crops,
-   quantities, prices, markets, locations,
-   harvest dates, or availability.
+quantities, prices, markets, locations,
+harvest dates, or availability.
 
 3. When mandi data is provided, use ONLY that data
-   for mandi-related answers.
+for mandi-related answers.
 
 4. Always mention the actual mandi data date when
-   discussing a mandi price.
+discussing a mandi price.
 
 5. Never call historical or cached data
-   "today's price".
+"today's price".
 
 6. Mandi prices are reported per quintal.
 
@@ -451,7 +534,7 @@ Example:
 
 **Tomato:** ₹500/quintal (₹5/kg)
 
-Lowest recorded price: Venkateswarnagar APMC, Nalgonda  
+Lowest recorded price: Venkateswarnagar APMC, Nalgonda
 Data date: 09/09/2026
 
 Do not use unnecessary headings for very short answers.
@@ -480,7 +563,7 @@ If the available data says the lowest tomato price is ₹500/quintal:
 
 "🍅 **Tomato:** ₹500/quintal (₹5/kg)
 
-Lowest recorded price: Venkateswarnagar APMC, Nalgonda  
+Lowest recorded price: Venkateswarnagar APMC, Nalgonda
 Data date: 09/09/2026"
 
 UNAVAILABLE DATA EXAMPLE:
@@ -492,27 +575,27 @@ not like a long AI-generated report.
 
 ================================================
 `,
-        },
+          },
 
-        /* ------------------------------------------------
-         * 7. Conversation history
-         * ------------------------------------------------ */
+          /* ------------------------------------------------
+           * 8. CONVERSATION HISTORY
+           * ------------------------------------------------ */
 
-        ...safeHistory,
+          ...safeHistory,
 
-        /* ------------------------------------------------
-         * 8. Current user message
-         * ------------------------------------------------ */
+          /* ------------------------------------------------
+           * 9. CURRENT USER MESSAGE
+           * ------------------------------------------------ */
 
-        {
-          role: "user",
-          content: message.trim(),
-        },
-      ],
-    });
+          {
+            role: "user",
+            content: message.trim(),
+          },
+        ],
+      });
 
     /* ------------------------------------------------
-     * 9. Extract response
+     * 10. EXTRACT RESPONSE
      * ------------------------------------------------ */
 
     const reply =
@@ -520,14 +603,17 @@ not like a long AI-generated report.
       "I couldn't generate a response.";
 
     /* ------------------------------------------------
-     * 10. Send response
+     * 11. SEND RESPONSE
      * ------------------------------------------------ */
 
     res.json({
       reply,
     });
   } catch (error) {
-    console.error("Chat/Groq error:", error);
+    console.error(
+      "Chat/Groq error:",
+      error
+    );
 
     res.status(500).json({
       error:
@@ -549,13 +635,14 @@ app.get("/api/mandi", async (req, res) => {
       market = "",
     } = req.query;
 
-    const records = await getMandiPrices({
-      state,
-      district,
-      commodity,
-      market,
-      limit: 20,
-    });
+    const records =
+      await getMandiPrices({
+        state,
+        district,
+        commodity,
+        market,
+        limit: 20,
+      });
 
     res.json({
       success: true,
@@ -563,7 +650,10 @@ app.get("/api/mandi", async (req, res) => {
       records,
     });
   } catch (error) {
-    console.error("Mandi API error:", error);
+    console.error(
+      "Mandi API error:",
+      error
+    );
 
     res.status(500).json({
       success: false,
@@ -576,43 +666,54 @@ app.get("/api/mandi", async (req, res) => {
  * MANDI SUMMARY API
  * ================================================================ */
 
-app.get("/api/mandi/summary", async (req, res) => {
-  try {
-    const {
-      state = "Telangana",
-      district = "",
-      commodity = "",
-      market = "",
-    } = req.query;
+app.get(
+  "/api/mandi/summary",
+  async (req, res) => {
+    try {
+      const {
+        state = "Telangana",
+        district = "",
+        commodity = "",
+        market = "",
+      } = req.query;
 
-    const summary = await getMandiSummary({
-      state,
-      district,
-      commodity,
-      market,
-      limit: 10000,
-    });
+      const summary =
+        await getMandiSummary({
+          state,
+          district,
+          commodity,
+          market,
+          limit: 10000,
+        });
 
-    res.json({
-      success: true,
-      data: summary,
-    });
-  } catch (error) {
-    console.error("Mandi summary error:", error);
+      res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      console.error(
+        "Mandi summary error:",
+        error
+      );
 
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 /* ================================================================
  * START SERVER
  * ================================================================ */
 
-const PORT = process.env.PORT || 5000;
+const PORT =
+  process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`AI Bot server running on port ${PORT}`);
+  console.log(
+    `AI Bot server running on port ${PORT}`
+  );
 });
+
