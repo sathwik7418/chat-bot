@@ -34,6 +34,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://farmer-chatbot-api.netlify.app",
+  "https://agriconnectsih26033.netlify.app",
 ];
 
 app.use(
@@ -387,7 +388,7 @@ requested mandi data is currently unavailable.
 
     const completion =
       await groq.chat.completions.create({
-        model: "openai/gpt-oss-120b",
+        model: "openai/gpt-oss-20b",
 
         temperature: 0.4,
 

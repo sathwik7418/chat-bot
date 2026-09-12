@@ -4,14 +4,16 @@
  * ================================================================
  *
  * Purpose:
- * Understand simple mandi-related user questions.
+ * Understand simple user questions related to:
+ *
+ * - Mandi / commodity prices
+ * - Weather
  *
  * The analyzer does NOT fetch data.
  * It only understands the user's question.
  *
  * ================================================================
  */
-
 
 /*
  * ------------------------------------------------
@@ -127,7 +129,6 @@ const commodityAliases = {
     "guar beans",
   ],
 };
-
 
 /*
  * ------------------------------------------------
@@ -265,10 +266,45 @@ const districtAliases = {
   ],
 };
 
+/*
+ * ------------------------------------------------
+ * 3. Weather keywords
+ * ------------------------------------------------
+ */
+
+const weatherKeywords = [
+  "weather",
+  "rain",
+  "raining",
+  "rains",
+  "rainfall",
+  "temperature",
+  "temp",
+  "forecast",
+  "climate",
+  "humidity",
+  "humid",
+  "wind",
+  "winds",
+  "windy",
+  "cloud",
+  "cloudy",
+  "sunny",
+  "sun",
+  "hot",
+  "cold",
+  "heat",
+  "storm",
+  "storms",
+  "thunderstorm",
+  "thunder",
+  "drizzle",
+  "showers",
+];
 
 /*
  * ------------------------------------------------
- * 3. Normalize text
+ * 4. Normalize text
  * ------------------------------------------------
  */
 
@@ -280,67 +316,32 @@ function normalizeText(message) {
     .replace(/\s+/g, " ");
 }
 
-
 /*
  * ------------------------------------------------
- * 4. Date helpers
+ * 5. Date helpers
  * ------------------------------------------------
- */
-
-/*
- * Format a JavaScript Date object as:
- *
- * YYYY-MM-DD
- *
- * using LOCAL server time.
  */
 
 function formatDate(date) {
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear();
 
-  const month =
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
 
-  const day =
-    String(
-      date.getDate()
-    ).padStart(2, "0");
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
-
-/*
- * Get today's date.
- */
-
 function getTodayDate() {
-  return formatDate(
-    new Date()
-  );
+  return formatDate(new Date());
 }
 
-
-/*
- * Get a date relative to today.
- *
- * Example:
- *
- * offset = -1
- * → yesterday
- *
- * offset = -2
- * → day before yesterday
- */
-
-function getRelativeDate(
-  offset
-) {
-  const date =
-    new Date();
+function getRelativeDate(offset) {
+  const date = new Date();
 
   date.setDate(
     date.getDate() + offset
@@ -349,9 +350,10 @@ function getRelativeDate(
   return formatDate(date);
 }
 
-
 /*
- * Convert month name to month number.
+ * ------------------------------------------------
+ * 6. Month names
+ * ------------------------------------------------
  */
 
 const monthNames = {
@@ -369,37 +371,18 @@ const monthNames = {
   december: 12,
 };
 
-
 /*
  * ------------------------------------------------
- * Detect date
- * ------------------------------------------------
- *
- * Returns:
- *
- * {
- *   date: "2026-09-09",
- *   dateType: "relative"
- * }
- *
- * or:
- *
- * {
- *   date: null,
- *   dateType: null
- * }
- *
+ * 7. Detect date
  * ------------------------------------------------
  */
 
 function detectDate(message) {
-  const text =
-    normalizeText(message);
+  const text = normalizeText(message);
 
   /*
    * TODAY
    */
-
   if (
     text.includes("today") ||
     text.includes("todays")
@@ -410,18 +393,12 @@ function detectDate(message) {
     };
   }
 
-
   /*
    * DAY BEFORE YESTERDAY
    */
-
   if (
-    text.includes(
-      "day before yesterday"
-    ) ||
-    text.includes(
-      "day before yesterdays"
-    )
+    text.includes("day before yesterday") ||
+    text.includes("day before yesterdays")
   ) {
     return {
       date: getRelativeDate(-2),
@@ -429,11 +406,9 @@ function detectDate(message) {
     };
   }
 
-
   /*
    * YESTERDAY
    */
-
   if (
     text.includes("yesterday") ||
     text.includes("yesterdays")
@@ -444,15 +419,9 @@ function detectDate(message) {
     };
   }
 
-
   /*
    * TOMORROW
-   *
-   * We understand it, although
-   * mandi data normally won't exist
-   * for a future date.
    */
-
   if (
     text.includes("tomorrow") ||
     text.includes("tomorrows")
@@ -462,7 +431,6 @@ function detectDate(message) {
       dateType: "relative",
     };
   }
-
 
   /*
    * ------------------------------------------------
@@ -475,26 +443,22 @@ function detectDate(message) {
    * ------------------------------------------------
    */
 
-  const numericDateMatch =
-    text.match(
-      /\b(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})\b/
-    );
+  const numericDateMatch = text.match(
+    /\b(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})\b/
+  );
 
   if (numericDateMatch) {
-    const day =
-      Number(
-        numericDateMatch[1]
-      );
+    const day = Number(
+      numericDateMatch[1]
+    );
 
-    const month =
-      Number(
-        numericDateMatch[2]
-      );
+    const month = Number(
+      numericDateMatch[2]
+    );
 
-    const year =
-      Number(
-        numericDateMatch[3]
-      );
+    const year = Number(
+      numericDateMatch[3]
+    );
 
     if (
       month >= 1 &&
@@ -503,13 +467,15 @@ function detectDate(message) {
       day <= 31
     ) {
       return {
-        date:
-          `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+        date: `${year}-${String(month).padStart(
+          2,
+          "0"
+        )}-${String(day).padStart(2, "0")}`,
+
         dateType: "specific",
       };
     }
   }
-
 
   /*
    * ------------------------------------------------
@@ -519,10 +485,9 @@ function detectDate(message) {
    * ------------------------------------------------
    */
 
-  const isoDateMatch =
-    text.match(
-      /\b(\d{4})-(\d{2})-(\d{2})\b/
-    );
+  const isoDateMatch = text.match(
+    /\b(\d{4})-(\d{2})-(\d{2})\b/
+  );
 
   if (isoDateMatch) {
     return {
@@ -530,7 +495,6 @@ function detectDate(message) {
       dateType: "specific",
     };
   }
-
 
   /*
    * ------------------------------------------------
@@ -541,36 +505,24 @@ function detectDate(message) {
    * ------------------------------------------------
    */
 
-  const monthDateMatch =
-    text.match(
-      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:\s+(\d{4}))?\b/
-    );
+  const monthDateMatch = text.match(
+    /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:\s+(\d{4}))?\b/
+  );
 
   if (monthDateMatch) {
     const monthName =
       monthDateMatch[1];
 
-    const day =
-      Number(
-        monthDateMatch[2]
-      );
+    const day = Number(
+      monthDateMatch[2]
+    );
 
-    /*
-     * If year isn't supplied,
-     * assume the current year.
-     */
-
-    const year =
-      monthDateMatch[3]
-        ? Number(
-            monthDateMatch[3]
-          )
-        : new Date().getFullYear();
+    const year = monthDateMatch[3]
+      ? Number(monthDateMatch[3])
+      : new Date().getFullYear();
 
     const month =
-      monthNames[
-        monthName
-      ];
+      monthNames[monthName];
 
     if (
       month &&
@@ -578,13 +530,15 @@ function detectDate(message) {
       day <= 31
     ) {
       return {
-        date:
-          `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+        date: `${year}-${String(month).padStart(
+          2,
+          "0"
+        )}-${String(day).padStart(2, "0")}`,
+
         dateType: "specific",
       };
     }
   }
-
 
   /*
    * ------------------------------------------------
@@ -595,31 +549,24 @@ function detectDate(message) {
    * ------------------------------------------------
    */
 
-  const dayMonthMatch =
-    text.match(
-      /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?\b/
-    );
+  const dayMonthMatch = text.match(
+    /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?\b/
+  );
 
   if (dayMonthMatch) {
-    const day =
-      Number(
-        dayMonthMatch[1]
-      );
+    const day = Number(
+      dayMonthMatch[1]
+    );
 
     const monthName =
       dayMonthMatch[2];
 
-    const year =
-      dayMonthMatch[3]
-        ? Number(
-            dayMonthMatch[3]
-          )
-        : new Date().getFullYear();
+    const year = dayMonthMatch[3]
+      ? Number(dayMonthMatch[3])
+      : new Date().getFullYear();
 
     const month =
-      monthNames[
-        monthName
-      ];
+      monthNames[monthName];
 
     if (
       month &&
@@ -627,13 +574,15 @@ function detectDate(message) {
       day <= 31
     ) {
       return {
-        date:
-          `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+        date: `${year}-${String(month).padStart(
+          2,
+          "0"
+        )}-${String(day).padStart(2, "0")}`,
+
         dateType: "specific",
       };
     }
   }
-
 
   /*
    * No date found.
@@ -645,27 +594,41 @@ function detectDate(message) {
   };
 }
 
-
 /*
  * ------------------------------------------------
- * 5. Detect commodity
+ * 8. Detect commodity
  * ------------------------------------------------
  */
 
 function detectCommodity(message) {
   const text = normalizeText(message);
 
-  const entries = Object.entries(commodityAliases)
-    .flatMap(([canonical, aliases]) =>
-      aliases.map(alias => ({
-        canonical,
-        alias: normalizeText(alias),
-      }))
+  const entries = Object.entries(
+    commodityAliases
+  )
+    .flatMap(
+      ([canonical, aliases]) =>
+        aliases.map((alias) => ({
+          canonical,
+          alias: normalizeText(alias),
+        }))
     )
-    .sort((a, b) => b.alias.length - a.alias.length);
+    .sort(
+      (a, b) =>
+        b.alias.length - a.alias.length
+    );
 
   for (const entry of entries) {
-    const pattern = new RegExp(`\\b${entry.alias}\\b`, "i");
+    const escapedAlias =
+      entry.alias.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+    const pattern = new RegExp(
+      `\\b${escapedAlias}\\b`,
+      "i"
+    );
 
     if (pattern.test(text)) {
       return entry.canonical;
@@ -675,27 +638,41 @@ function detectCommodity(message) {
   return null;
 }
 
-
 /*
  * ------------------------------------------------
- * 6. Detect district
+ * 9. Detect district
  * ------------------------------------------------
  */
 
 function detectDistrict(message) {
   const text = normalizeText(message);
 
-  const entries = Object.entries(districtAliases)
-    .flatMap(([canonical, aliases]) =>
-      aliases.map(alias => ({
-        canonical,
-        alias: normalizeText(alias),
-      }))
+  const entries = Object.entries(
+    districtAliases
+  )
+    .flatMap(
+      ([canonical, aliases]) =>
+        aliases.map((alias) => ({
+          canonical,
+          alias: normalizeText(alias),
+        }))
     )
-    .sort((a, b) => b.alias.length - a.alias.length);
+    .sort(
+      (a, b) =>
+        b.alias.length - a.alias.length
+    );
 
   for (const entry of entries) {
-    const pattern = new RegExp(`\\b${entry.alias}\\b`, "i");
+    const escapedAlias =
+      entry.alias.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+    const pattern = new RegExp(
+      `\\b${escapedAlias}\\b`,
+      "i"
+    );
 
     if (pattern.test(text)) {
       return entry.canonical;
@@ -705,17 +682,34 @@ function detectDistrict(message) {
   return null;
 }
 
-
 /*
  * ------------------------------------------------
- * 7. Detect price intent
+ * 10. Detect weather intent
  * ------------------------------------------------
  */
 
-function detectIntent(message) {
+function detectWeatherIntent(message) {
   const text = normalizeText(message);
 
-  // LOWEST PRICE
+  return weatherKeywords.some(
+    (keyword) =>
+      text.includes(keyword)
+  );
+}
+
+/*
+ * ------------------------------------------------
+ * 11. Detect price intent
+ * ------------------------------------------------
+ */
+
+function detectPriceIntent(message) {
+  const text = normalizeText(message);
+
+  /*
+   * LOWEST PRICE
+   */
+
   if (
     text.includes("cheapest") ||
     text.includes("lowest") ||
@@ -729,7 +723,10 @@ function detectIntent(message) {
     return "LOWEST_PRICE";
   }
 
-  // HIGHEST PRICE
+  /*
+   * HIGHEST PRICE
+   */
+
   if (
     text.includes("highest") ||
     text.includes("maximum") ||
@@ -742,7 +739,10 @@ function detectIntent(message) {
     return "HIGHEST_PRICE";
   }
 
-  // COMPARE PRICES
+  /*
+   * COMPARE PRICES
+   */
+
   if (
     text.includes("compare") ||
     text.includes("comparison") ||
@@ -752,7 +752,10 @@ function detectIntent(message) {
     return "COMPARE_PRICE";
   }
 
-  // GENERAL PRICE QUESTION
+  /*
+   * GENERAL PRICE QUESTION
+   */
+
   if (
     text.includes("price") ||
     text.includes("prices") ||
@@ -766,10 +769,12 @@ function detectIntent(message) {
     return "PRICE";
   }
 
-  // IMPORTANT:
-  // If a known commodity was mentioned, treat the question
-  // as a mandi/commodity query even if the user didn't say "price".
-  const commodity = detectCommodity(message);
+  /*
+   * Known commodity without explicit price word.
+   */
+
+  const commodity =
+    detectCommodity(message);
 
   if (commodity) {
     return "PRICE";
@@ -778,16 +783,37 @@ function detectIntent(message) {
   return "GENERAL";
 }
 
-
 /*
  * ------------------------------------------------
- * 8. Main analyzer
+ * 12. Main intent detector
  * ------------------------------------------------
  */
 
-function analyzeMandiQuestion(
-  message
-) {
+function detectIntent(message) {
+  /*
+   * IMPORTANT:
+   *
+   * Weather is checked FIRST.
+   *
+   * This prevents a weather question from
+   * accidentally falling into the commodity
+   * price logic.
+   */
+
+  if (detectWeatherIntent(message)) {
+    return "WEATHER";
+  }
+
+  return detectPriceIntent(message);
+}
+
+/*
+ * ------------------------------------------------
+ * 13. Main analyzer
+ * ------------------------------------------------
+ */
+
+function analyzeMandiQuestion(message) {
   const dateInfo =
     detectDate(message);
 
@@ -809,20 +835,30 @@ function analyzeMandiQuestion(
   };
 }
 
-
 /*
  * ------------------------------------------------
- * 9. Export
+ * 14. Export
  * ------------------------------------------------
  */
 
 module.exports = {
   analyzeMandiQuestion,
+
   detectCommodity,
+
   detectDistrict,
+
   detectDate,
+
   detectIntent,
+
+  detectWeatherIntent,
+
+  detectPriceIntent,
+
   normalizeText,
+
   commodityAliases,
+
   districtAliases,
 };
